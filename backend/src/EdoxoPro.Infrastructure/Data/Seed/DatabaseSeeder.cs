@@ -56,7 +56,7 @@ public class DatabaseSeeder
 
     private async Task SeedAdminUserAsync()
     {
-        var adminEmail = "admin@edoxo.com";
+        var adminEmail = "admin@edoxopro.com";
         var existingUser = await _userManager.FindByEmailAsync(adminEmail);
         if (existingUser != null) return;
 
