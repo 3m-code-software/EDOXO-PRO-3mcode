@@ -1,10 +1,12 @@
 node_modules
 .next/
 out/
+package-lock.json
 
 # dotnet
 **/bin/
 **/obj/
+**/publish/
 *.user
 *.suo
 
