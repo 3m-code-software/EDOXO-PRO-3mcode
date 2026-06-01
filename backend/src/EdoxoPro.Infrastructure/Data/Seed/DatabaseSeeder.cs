@@ -143,7 +143,7 @@ public class DatabaseSeeder
 
     private async Task SeedSampleDataAsync()
     {
-        if (_context.Products.Any()) return;
+        if (_context.Products.Count() >= 5) return;
 
         var hasCategories = _context.ProductCategories.Any();
         List<ProductCategory>? categories = null;
@@ -252,6 +252,8 @@ public class DatabaseSeeder
         var suppliers = await _context.Suppliers.ToListAsync();
         var products = await _context.Products.ToListAsync();
         var expenseCategories = await _context.ExpenseCategories.ToListAsync();
+        if (customers.Count == 0 || suppliers.Count == 0 || products.Count == 0 || expenseCategories.Count == 0) return;
+
         var adminUser = await _context.Users.FirstAsync(u => u.Email == "admin@edoxopro.com");
         var branch = await _context.Branches.FirstAsync();
         var invoiceSetting = await _context.InvoiceSettings.FirstAsync();
