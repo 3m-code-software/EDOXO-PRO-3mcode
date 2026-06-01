@@ -1,0 +1,6 @@
+@EdoxoPro.Api_HostAddress = http://localhost:5229
+
+GET {{EdoxoPro.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
