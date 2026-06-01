@@ -2,6 +2,7 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Noto_Sans_Arabic } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
 const notoSansArabic = Noto_Sans_Arabic({
@@ -26,7 +27,7 @@ export default function RootLayout({
         className={`${notoSansArabic.className} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Analytics />
       </body>
     </html>

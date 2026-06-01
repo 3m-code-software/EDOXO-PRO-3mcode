@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { WelcomeSection } from "@/components/welcome-section"
@@ -17,9 +19,17 @@ import { CalculatorModal } from "@/components/calculator-modal"
 import { ProfitModal } from "@/components/profit-modal"
 
 export default function DashboardPage() {
+  const { isAuthenticated, loading } = useAuth()
+  const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const [profitOpen, setProfitOpen] = useState(false)
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) router.push("/login")
+  }, [loading, isAuthenticated, router])
+
+  if (loading || !isAuthenticated) return null
 
   return (
     <div className="min-h-screen bg-gray-100" dir="rtl">
