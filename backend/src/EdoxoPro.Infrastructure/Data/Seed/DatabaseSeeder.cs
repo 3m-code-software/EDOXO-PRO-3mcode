@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using EdoxoPro.Domain.Entities;
+using EdoxoPro.Domain.Enums;
 using EdoxoPro.Infrastructure.Identity;
 
 namespace EdoxoPro.Infrastructure.Data.Seed;
@@ -26,6 +28,8 @@ public class DatabaseSeeder
         await SeedDefaultBranchAsync();
         await SeedSettingsAsync();
         await SeedSampleDataAsync();
+        await SeedExpenseCategoriesAsync();
+        await SeedTransactionDataAsync();
     }
 
     private async Task SeedDefaultRolesAsync()
@@ -203,6 +207,214 @@ public class DatabaseSeeder
             new() { ContactId = "SUP-005", Name = "BuildPro Hardware", Email = "info@buildpro.com", Phone = "0110000005", City = "Mecca", IsActive = true },
         };
         _context.Suppliers.AddRange(suppliers);
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedExpenseCategoriesAsync()
+    {
+        if (_context.ExpenseCategories.Any()) return;
+
+        _context.ExpenseCategories.AddRange(new List<ExpenseCategory>
+        {
+            new() { Name = "إيجار", Description = "إيجار المكاتب والمخازن", IsActive = true },
+            new() { Name = "مرافق", Description = "كهرباء - مياه - غاز", IsActive = true },
+            new() { Name = "رواتب", Description = "رواتب الموظفين", IsActive = true },
+            new() { Name = "صيانة", Description = "صيانة الأجهزة والمعدات", IsActive = true },
+            new() { Name = "تسويق", Description = "إعلانات وتسويق", IsActive = true },
+            new() { Name = "نقل", Description = "نقل وشحن", IsActive = true },
+            new() { Name = "قرطاسية", Description = "مستلزمات مكتبية", IsActive = true },
+            new() { Name = "اتصالات", Description = "فواتير اتصالات وانترنت", IsActive = true },
+            new() { Name = "مستلزمات نظافة", Description = "منتجات التنظيف", IsActive = true },
+            new() { Name = "أخرى", Description = "مصاريف متنوعة", IsActive = true },
+        });
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedTransactionDataAsync()
+    {
+        if (_context.Sales.Any()) return;
+
+        var customers = await _context.Customers.ToListAsync();
+        var suppliers = await _context.Suppliers.ToListAsync();
+        var products = await _context.Products.ToListAsync();
+        var expenseCategories = await _context.ExpenseCategories.ToListAsync();
+        var adminUser = await _context.Users.FirstAsync(u => u.Email == "admin@edoxopro.com");
+        var branch = await _context.Branches.FirstAsync();
+        var invoiceSetting = await _context.InvoiceSettings.FirstAsync();
+
+        var random = new Random(42);
+        var expenseNames = new[] { "إيجار المكتب", "فواتير الكهرباء", "رواتب الموظفين", "صيانة أجهزة", "حملة تسويقية", "تكاليف شحن", "مستلزمات مكتبية", "فواتير اتصالات", "اشتراك إنترنت", "مستلزمات نظافة", "استشارات قانونية", "تأمين", "تدريب موظفين", "ضيافة عملاء", "صيانة سيارات" };
+
+        // ---- Sales (30 invoices over 30 days) ----
+        for (int i = 0; i < 30; i++)
+        {
+            var date = DateTime.UtcNow.AddDays(-(29 - i)).Date.AddHours(10).AddMinutes(random.Next(0, 480));
+            var customer = customers[random.Next(customers.Count)];
+            var itemCount = random.Next(1, 5);
+            var chosenProducts = new HashSet<int>();
+            var saleItems = new List<SaleItem>();
+            decimal subtotal = 0;
+
+            for (int j = 0; j < itemCount; j++)
+            {
+                var productIdx = random.Next(products.Count);
+                if (!chosenProducts.Add(productIdx) && chosenProducts.Count < products.Count)
+                {
+                    productIdx = (productIdx + 1) % products.Count;
+                    chosenProducts.Add(productIdx);
+                }
+
+                var product = products[productIdx];
+                var qty = random.Next(1, 15);
+                var unitPrice = product.SalePrice;
+                var lineTotal = qty * unitPrice;
+                subtotal += lineTotal;
+
+                saleItems.Add(new SaleItem
+                {
+                    ProductId = product.Id,
+                    Quantity = qty,
+                    UnitPrice = unitPrice,
+                    Total = lineTotal
+                });
+            }
+
+            var tax = Math.Round(subtotal * 0.15m, 2);
+            var total = subtotal + tax;
+
+            var status = i < 27 ? SaleStatus.Confirmed : SaleStatus.Draft;
+            var paymentStatus = i switch
+            {
+                < 10 => PaymentStatus.Paid,
+                < 20 => PaymentStatus.Unpaid,
+                _ => PaymentStatus.Partial
+            };
+            var shippingStatus = i switch
+            {
+                < 5 => ShippingStatus.Pending,
+                < 15 => ShippingStatus.Shipped,
+                _ => ShippingStatus.Delivered
+            };
+
+            var paidAmount = paymentStatus switch
+            {
+                PaymentStatus.Paid => total,
+                PaymentStatus.Partial => Math.Round(total * 0.5m, 2),
+                _ => 0
+            };
+
+            _context.Sales.Add(new Sale
+            {
+                InvoiceNumber = $"INV-{invoiceSetting.NextNumber + i}",
+                CustomerId = customer.Id,
+                BranchId = branch.Id,
+                Date = date,
+                Subtotal = subtotal,
+                Discount = 0,
+                DiscountType = "Fixed",
+                Tax = tax,
+                TaxRate = 15,
+                Total = total,
+                PaidAmount = paidAmount,
+                Status = status,
+                PaymentStatus = paymentStatus,
+                ShippingStatus = shippingStatus,
+                Items = saleItems
+            });
+        }
+
+        // ---- Purchases (15 invoices over 30 days) ----
+        for (int i = 0; i < 15; i++)
+        {
+            var date = DateTime.UtcNow.AddDays(-(29 - i * 2)).Date.AddHours(9).AddMinutes(random.Next(0, 480));
+            var supplier = suppliers[random.Next(suppliers.Count)];
+            var itemCount = random.Next(2, 6);
+            var chosenProducts = new HashSet<int>();
+            var purchaseItems = new List<PurchaseItem>();
+            decimal subtotal = 0;
+
+            for (int j = 0; j < itemCount; j++)
+            {
+                var productIdx = random.Next(products.Count);
+                if (!chosenProducts.Add(productIdx) && chosenProducts.Count < products.Count)
+                {
+                    productIdx = (productIdx + 1) % products.Count;
+                    chosenProducts.Add(productIdx);
+                }
+                var product = products[productIdx];
+                var qty = random.Next(10, 100);
+                var unitPrice = product.CostPrice;
+                var lineTotal = qty * unitPrice;
+                subtotal += lineTotal;
+
+                purchaseItems.Add(new PurchaseItem
+                {
+                    ProductId = product.Id,
+                    Quantity = qty,
+                    UnitPrice = unitPrice,
+                    Total = lineTotal
+                });
+            }
+
+            var tax = Math.Round(subtotal * 0.15m, 2);
+            var total = subtotal + tax;
+
+            _context.Purchases.Add(new Purchase
+            {
+                ReferenceNumber = $"PO-{i + 1:D4}",
+                SupplierId = supplier.Id,
+                BranchId = branch.Id,
+                Date = date,
+                Subtotal = subtotal,
+                Tax = tax,
+                TaxRate = 15,
+                Total = total,
+                PaidAmount = i % 2 == 0 ? total : 0,
+                Status = PurchaseStatus.Received,
+                PaymentPeriod = random.Next(0, 2) == 0 ? 30 : null,
+                Items = purchaseItems
+            });
+        }
+
+        // ---- Expenses (25 expenses over 30 days) ----
+        for (int i = 0; i < 25; i++)
+        {
+            var date = DateTime.UtcNow.AddDays(-random.Next(0, 30)).Date.AddHours(8).AddMinutes(random.Next(0, 480));
+            _context.Expenses.Add(new Expense
+            {
+                CategoryId = expenseCategories[random.Next(expenseCategories.Count)].Id,
+                Amount = Math.Round((decimal)(random.NextDouble() * 9000 + 100), 2),
+                Date = date,
+                Description = expenseNames[random.Next(expenseNames.Length)],
+                BranchId = branch.Id,
+                AddedByUserId = adminUser.Id,
+                PaymentMethod = random.Next(0, 2) == 0 ? "Cash" : "Bank Transfer"
+            });
+        }
+
+        await _context.SaveChangesAsync();
+
+        // ---- Update invoice next number ----
+        invoiceSetting.NextNumber += 30;
+        await _context.SaveChangesAsync();
+
+        // ---- Update stock to reflect sales/purchases ----
+        foreach (var product in products)
+        {
+            var soldQty = await _context.SaleItems
+                .Where(si => si.ProductId == product.Id)
+                .SumAsync(si => si.Quantity);
+            var purchasedQty = await _context.PurchaseItems
+                .Where(pi => pi.ProductId == product.Id)
+                .SumAsync(pi => pi.Quantity);
+            product.CurrentStock = product.CurrentStock + purchasedQty - soldQty;
+        }
+
+        // ---- Set some products as low stock for inventory alerts ----
+        products[0].CurrentStock = 2;  // Smartphone X1 - low stock
+        products[1].CurrentStock = 3;  // Laptop Pro 15 - low stock
+        products[8].CurrentStock = 5;  // Hammer - low stock
 
         await _context.SaveChangesAsync();
     }
