@@ -46,39 +46,44 @@ public class DatabaseSeeder
         {
             if (!await _roleManager.RoleExistsAsync(name))
             {
-                var role = new AppIdentityRole(name)
+                var identityRole = new AppIdentityRole(name)
                 {
                     Description = description,
                     IsSystem = isSystem
                 };
-                await _roleManager.CreateAsync(role);
+                await _roleManager.CreateAsync(identityRole);
+            }
+
+            if (!_context.RolesConfig.Any(r => r.Name == name))
+            {
+                _context.RolesConfig.Add(new Role { Name = name, Description = description, IsSystem = isSystem });
             }
         }
+        await _context.SaveChangesAsync();
     }
 
     private async Task SeedAdminUserAsync()
     {
         var adminEmail = "admin@edoxopro.com";
-        var existingUser = await _userManager.FindByEmailAsync(adminEmail);
-        if (existingUser != null) return;
+        if (_context.Users.Any(u => u.Email == adminEmail)) return;
 
-        var adminUser = new AppIdentityUser
+        var passwordHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("Admin@123")));
+
+        var adminUser = new User
         {
-            UserName = adminEmail,
+            Username = adminEmail,
             Email = adminEmail,
             FullName = "System Admin",
-            IsActive = true,
-            EmailConfirmed = true,
-            PasswordHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("Admin@123")))
+            PasswordHash = passwordHash,
+            IsActive = true
         };
-
-        _context.Set<AppIdentityUser>().Add(adminUser);
+        _context.Users.Add(adminUser);
         await _context.SaveChangesAsync();
 
-        var adminRole = await _roleManager.FindByNameAsync("Admin");
-        if (adminRole != null)
+        var adminDomainRole = _context.RolesConfig.FirstOrDefault(r => r.Name == "Admin");
+        if (adminDomainRole != null)
         {
-            _context.Set<IdentityUserRole<int>>().Add(new IdentityUserRole<int> { UserId = adminUser.Id, RoleId = adminRole.Id });
+            _context.UserRolesMap.Add(new UserRole { UserId = adminUser.Id, RoleId = adminDomainRole.Id });
             await _context.SaveChangesAsync();
         }
     }
