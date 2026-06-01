@@ -1,37 +1,57 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, Printer, FileSpreadsheet, Eye, FileText, ArrowUpDown } from "lucide-react"
-import { useState } from "react"
+import { apiClient } from "@/lib/api-client"
+
+interface RecentOrder {
+  id: number
+  invoiceNumber: string
+  customerName: string
+  total: number
+  status: string
+  paymentStatus: string
+  date: string
+}
 
 export function SalesOrders() {
-  const [sortColumn, setSortColumn] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [orders, setOrders] = useState<RecentOrder[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-    } else {
-      setSortColumn(column)
-      setSortDirection("asc")
-    }
+  useEffect(() => {
+    apiClient<{ data: RecentOrder[] }>("/api/dashboard/recent-orders?count=10")
+      .then((res) => setOrders(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const formatDate = (d: string) => {
+    const date = new Date(d)
+    return date.toLocaleDateString("en-GB")
   }
 
-  const columns = [
-    { key: "option", label: "خيار" },
-    { key: "date", label: "التاريخ" },
-    { key: "orderNumber", label: "رقم الطلب" },
-    { key: "customerName", label: "اسم العميل" },
-    { key: "contactNumber", label: "رقم الاتصال" }, // Fixed from رقم التواصل
-    { key: "branch", label: "الفرع" },
-    { key: "status", label: "الحالة" },
-    { key: "shippingStatus", label: "حالة الشحن" },
-    { key: "remainingQuantity", label: "الكمية المتبقية" }, // Fixed from الخميلة المتبقية
-    { key: "addedBy", label: "أضيفت بواسطة" },
-  ]
+  const statusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      Confirmed: "bg-green-100 text-green-700",
+      Draft: "bg-gray-100 text-gray-600",
+      Shipped: "bg-blue-100 text-blue-700",
+      Delivered: "bg-teal-100 text-teal-700",
+    }
+    return colors[status] || "bg-gray-100 text-gray-600"
+  }
+
+  const paymentBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      Paid: "bg-green-100 text-green-700",
+      Unpaid: "bg-red-100 text-red-700",
+      Partial: "bg-yellow-100 text-yellow-700",
+    }
+    return colors[status] || "bg-gray-100 text-gray-600"
+  }
 
   return (
     <Card className="mb-6 border-t-4 border-t-yellow-400">
@@ -82,29 +102,50 @@ export function SalesOrders() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-right">
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className="p-2 font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => handleSort(col.key)}
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <ArrowUpDown className={`w-3 h-3 ${sortColumn === col.key ? "text-blue-600" : "text-gray-400"}`} />
-                    {col.label}
-                  </div>
-                </th>
-              ))}
+              <th className="p-2 font-medium text-gray-600">رقم الفاتورة</th>
+              <th className="p-2 font-medium text-gray-600">العميل</th>
+              <th className="p-2 font-medium text-gray-600">التاريخ</th>
+              <th className="p-2 font-medium text-gray-600">المبلغ</th>
+              <th className="p-2 font-medium text-gray-600">الحالة</th>
+              <th className="p-2 font-medium text-gray-600">الدفع</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={10} className="text-center py-8">
-                <div className="flex flex-col items-center gap-2">
-                  <FileText className="w-8 h-8 text-gray-300" />
-                  <span className="text-gray-400">لا توجد بيانات متاحة فى الجدول</span>
-                </div>
-              </td>
-            </tr>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8">
+                  <div className="flex justify-center gap-1">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                  </div>
+                </td>
+              </tr>
+            ) : orders.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8">
+                  <div className="flex flex-col items-center gap-2">
+                    <FileText className="w-8 h-8 text-gray-300" />
+                    <span className="text-gray-400">لا توجد طلبات مبيعات</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              orders.map((order) => (
+                <tr key={order.id} className="border-b hover:bg-gray-50">
+                  <td className="p-2 font-medium">{order.invoiceNumber}</td>
+                  <td className="p-2">{order.customerName}</td>
+                  <td className="p-2">{formatDate(order.date)}</td>
+                  <td className="p-2">L.E {order.total.toFixed(2)}</td>
+                  <td className="p-2">
+                    <span className={`px-2 py-0.5 rounded text-xs ${statusBadge(order.status)}`}>{order.status}</span>
+                  </td>
+                  <td className="p-2">
+                    <span className={`px-2 py-0.5 rounded text-xs ${paymentBadge(order.paymentStatus)}`}>{order.paymentStatus}</span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
         <div className="flex items-center justify-between mt-4 text-xs text-gray-500">
@@ -112,7 +153,7 @@ export function SalesOrders() {
             <button className="hover:text-blue-600 px-2 py-1 rounded border">السابق</button>
             <button className="hover:text-blue-600 px-2 py-1 rounded border">التالى</button>
           </div>
-          <span>عرض 0 إلى 0 من 0 إدخالات</span>
+          <span>عرض 0 إلى 0 من {orders.length} إدخالات</span>
         </div>
       </CardContent>
     </Card>

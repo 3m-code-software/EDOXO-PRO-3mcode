@@ -1,35 +1,36 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Printer, FileSpreadsheet, Eye, Truck, ArrowUpDown } from "lucide-react"
-import { useState } from "react"
+import { Download, Printer, FileSpreadsheet, Eye, Truck } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
+
+interface PendingShipment {
+  id: number
+  invoiceNumber: string
+  customerName: string
+  total: number
+  date: string
+}
 
 export function PendingShipments() {
-  const [sortColumn, setSortColumn] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [shipments, setShipments] = useState<PendingShipment[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-    } else {
-      setSortColumn(column)
-      setSortDirection("asc")
-    }
+  useEffect(() => {
+    apiClient<{ data: PendingShipment[] }>("/api/dashboard/pending-shipments")
+      .then((res) => setShipments(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const formatDate = (d: string) => {
+    const date = new Date(d)
+    return date.toLocaleDateString("en-GB")
   }
-
-  const columns = [
-    { key: "option", label: "خيار" },
-    { key: "date", label: "التاريخ" },
-    { key: "invoiceNumber", label: "الفاتورة رقم." }, // Added period
-    { key: "customerName", label: "اسم العميل" },
-    { key: "contactNumber", label: "رقم الاتصال" }, // Fixed from رقم التواصل
-    { key: "branch", label: "الفرع" },
-    { key: "shippingStatus", label: "حالة الشحن" },
-    { key: "paymentStatus", label: "حالة الدفع" },
-  ]
 
   return (
     <Card className="mb-6 border-t-4 border-t-teal-400">
@@ -80,29 +81,42 @@ export function PendingShipments() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-right">
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className="p-2 font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => handleSort(col.key)}
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <ArrowUpDown className={`w-3 h-3 ${sortColumn === col.key ? "text-blue-600" : "text-gray-400"}`} />
-                    {col.label}
-                  </div>
-                </th>
-              ))}
+              <th className="p-2 font-medium text-gray-600">رقم الفاتورة</th>
+              <th className="p-2 font-medium text-gray-600">العميل</th>
+              <th className="p-2 font-medium text-gray-600">التاريخ</th>
+              <th className="p-2 font-medium text-gray-600">المبلغ</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={8} className="text-center py-8">
-                <div className="flex flex-col items-center gap-2">
-                  <Truck className="w-8 h-8 text-gray-300" />
-                  <span className="text-gray-400">لا توجد بيانات متاحة فى الجدول</span>
-                </div>
-              </td>
-            </tr>
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="text-center py-8">
+                  <div className="flex justify-center gap-1">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                  </div>
+                </td>
+              </tr>
+            ) : shipments.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-8">
+                  <div className="flex flex-col items-center gap-2">
+                    <Truck className="w-8 h-8 text-gray-300" />
+                    <span className="text-gray-400">لا توجد شحنات معلقة</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              shipments.map((s) => (
+                <tr key={s.id} className="border-b hover:bg-gray-50">
+                  <td className="p-2 font-medium">{s.invoiceNumber}</td>
+                  <td className="p-2">{s.customerName}</td>
+                  <td className="p-2">{formatDate(s.date)}</td>
+                  <td className="p-2">L.E {s.total.toFixed(2)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
         <div className="flex items-center justify-between mt-4 text-xs text-gray-500">
@@ -110,7 +124,7 @@ export function PendingShipments() {
             <button className="hover:text-blue-600 px-2 py-1 rounded border">السابق</button>
             <button className="hover:text-blue-600 px-2 py-1 rounded border">التالى</button>
           </div>
-          <span>عرض 0 إلى 0 من 0 إدخالات</span>
+          <span>عرض 0 إلى 0 من {shipments.length} إدخالات</span>
         </div>
       </CardContent>
     </Card>

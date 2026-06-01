@@ -1,14 +1,29 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Menu } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
+
+interface AnnualDataPoint {
+  month: string
+  salesAmount: number
+  purchaseAmount: number
+  profit: number
+}
 
 export function AnnualChart() {
-  const currentYear = new Date().getFullYear()
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    return `${monthNames[i]}-${currentYear}`
-  })
+  const [data, setData] = useState<AnnualDataPoint[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    apiClient<{ data: AnnualDataPoint[] }>("/api/dashboard/annual-chart")
+      .then((res) => setData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const maxValue = Math.max(...data.map((d) => d.salesAmount), 1)
 
   return (
     <Card className="mb-6">
@@ -28,22 +43,38 @@ export function AnnualChart() {
       <CardContent>
         <div className="h-48 relative">
           <div className="absolute left-0 top-0 text-xs text-gray-400">أعلى المبيعات EGP</div>
-          <div className="absolute left-0 bottom-1/2 text-xs text-gray-400">0</div>
+          <div className="absolute left-0 bottom-0 text-xs text-gray-400">0</div>
           <div className="flex items-end justify-between h-full pt-6 pb-4 px-4">
-            {months.map((_, index) => (
-              <div key={index} className="flex flex-col items-center gap-1">
-                <div className="w-3 h-1 bg-blue-200 rounded-full"></div>
-              </div>
-            ))}
+            {loading
+              ? Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="w-3 bg-gray-200 rounded-full animate-pulse h-4" />
+                ))
+              : data.map((point, index) => {
+                  const height = maxValue > 0 ? Math.max((point.salesAmount / maxValue) * 180, 4) : 4
+                  return (
+                    <div key={index} className="flex flex-col items-center gap-1">
+                      <div
+                        className="w-3 bg-blue-500 rounded-full transition-all duration-500"
+                        style={{ height: `${height}px` }}
+                      />
+                    </div>
+                  )
+                })}
           </div>
-          <div className="absolute bottom-1/2 left-0 right-0 border-t border-dashed border-gray-200"></div>
+          <div className="absolute bottom-0 left-0 right-0 border-t border-dashed border-gray-200"></div>
         </div>
         <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
-          {months.map((month, i) => (
-            <span key={i} className="text-[10px]">
-              {month}
-            </span>
-          ))}
+          {data.length > 0
+            ? data.map((point, i) => (
+                <span key={i} className="text-[10px]">
+                  {point.month}
+                </span>
+              ))
+            : Array.from({ length: 12 }).map((_, i) => (
+                <span key={i} className="text-[10px] text-gray-300">
+                  --
+                </span>
+              ))}
         </div>
       </CardContent>
     </Card>
