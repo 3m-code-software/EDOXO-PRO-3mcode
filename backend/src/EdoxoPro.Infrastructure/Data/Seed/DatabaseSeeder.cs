@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using EdoxoPro.Domain.Entities;
 using EdoxoPro.Infrastructure.Identity;
@@ -66,13 +68,18 @@ public class DatabaseSeeder
             Email = adminEmail,
             FullName = "System Admin",
             IsActive = true,
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            PasswordHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("Admin@123")))
         };
 
-        var result = await _userManager.CreateAsync(adminUser, "Admin@123");
-        if (result.Succeeded)
+        _context.Set<AppIdentityUser>().Add(adminUser);
+        await _context.SaveChangesAsync();
+
+        var adminRole = await _roleManager.FindByNameAsync("Admin");
+        if (adminRole != null)
         {
-            await _userManager.AddToRoleAsync(adminUser, "Admin");
+            _context.Set<IdentityUserRole<int>>().Add(new IdentityUserRole<int> { UserId = adminUser.Id, RoleId = adminRole.Id });
+            await _context.SaveChangesAsync();
         }
     }
 
