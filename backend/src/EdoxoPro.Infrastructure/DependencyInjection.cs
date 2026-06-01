@@ -15,7 +15,8 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions => sqlOptions.CommandTimeout(120).EnableRetryOnFailure(3))
                 .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddIdentityCore<AppIdentityUser>(options =>

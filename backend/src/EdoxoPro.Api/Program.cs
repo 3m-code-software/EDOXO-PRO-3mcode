@@ -123,8 +123,16 @@ try
     {
         var context = scope.ServiceProvider.GetRequiredService<EdoxoPro.Infrastructure.Data.AppDbContext>();
         await context.Database.MigrateAsync();
-        var seeder = scope.ServiceProvider.GetRequiredService<EdoxoPro.Infrastructure.Data.Seed.DatabaseSeeder>();
-        await seeder.SeedAsync();
+        try
+        {
+            var seeder = scope.ServiceProvider.GetRequiredService<EdoxoPro.Infrastructure.Data.Seed.DatabaseSeeder>();
+            await seeder.SeedAsync();
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(ex, "Seeder failed (non-fatal), app will continue");
+        }
     }
 
     app.UseMiddleware<ExceptionMiddleware>();
