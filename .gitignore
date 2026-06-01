@@ -19,3 +19,11 @@ package-lock.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Local tools
+.claude/
+.playwright/
+.playwright-cli/
+
+# Runtime
+**/logs/
