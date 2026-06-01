@@ -4,6 +4,7 @@ using EdoxoPro.Api.Middleware;
 using EdoxoPro.Application;
 using EdoxoPro.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -120,6 +121,8 @@ try
 
     using (var scope = app.Services.CreateScope())
     {
+        var context = scope.ServiceProvider.GetRequiredService<EdoxoPro.Infrastructure.Data.AppDbContext>();
+        await context.Database.MigrateAsync();
         var seeder = scope.ServiceProvider.GetRequiredService<EdoxoPro.Infrastructure.Data.Seed.DatabaseSeeder>();
         await seeder.SeedAsync();
     }
