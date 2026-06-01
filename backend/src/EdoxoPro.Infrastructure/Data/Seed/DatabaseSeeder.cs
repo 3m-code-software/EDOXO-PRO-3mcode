@@ -187,6 +187,7 @@ public class DatabaseSeeder
             new() { Name = "LED Desk Lamp", SKU = "HRD-002", Barcode = "50000002", CategoryId = categories[4].Id, BrandId = brands[0].Id, UnitId = units[0].Id, CostPrice = 18, SalePrice = 40, WholesalePrice = 30, CurrentStock = 150, MinStock = 20, IsActive = true },
         };
         _context.Products.AddRange(products);
+        await _context.SaveChangesAsync();
 
         var customers = new List<Customer>
         {
@@ -197,6 +198,7 @@ public class DatabaseSeeder
             new() { Name = "Faisal Abdullah", Email = "faisal@example.com", Phone = "0555000005", City = "Medina", IsActive = true },
         };
         _context.Customers.AddRange(customers);
+        await _context.SaveChangesAsync();
 
         var suppliers = new List<Supplier>
         {
@@ -207,7 +209,6 @@ public class DatabaseSeeder
             new() { ContactId = "SUP-005", Name = "BuildPro Hardware", Email = "info@buildpro.com", Phone = "0110000005", City = "Mecca", IsActive = true },
         };
         _context.Suppliers.AddRange(suppliers);
-
         await _context.SaveChangesAsync();
     }
 
