@@ -4,20 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Menu } from "lucide-react"
 
 export function AnnualChart() {
-  const months = [
-    "Jan-2025",
-    "Feb-2025",
-    "Mar-2025",
-    "Apr-2025",
-    "May-2025",
-    "Jun-2025",
-    "Jul-2025",
-    "Aug-2025",
-    "Sep-2025",
-    "Oct-2025",
-    "Nov-2025",
-    "Dec-2025",
-  ]
+  const currentYear = new Date().getFullYear()
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    return `${monthNames[i]}-${currentYear}`
+  })
 
   return (
     <Card className="mb-6">

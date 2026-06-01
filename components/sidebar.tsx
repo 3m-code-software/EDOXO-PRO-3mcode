@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronDown,
   Bell,
+  LogOut,
 } from "lucide-react";
 
 interface SubItem {
@@ -208,9 +209,10 @@ const menuItems: MenuItem[] = [
 
 interface SidebarProps {
   collapsed: boolean;
+  onLogout?: () => void;
 }
 
-export function Sidebar({ collapsed }: SidebarProps) {
+export function Sidebar({ collapsed, onLogout }: SidebarProps) {
   const pathname = usePathname();
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({
     "إدارة المستخدمين": pathname?.startsWith("/user-management") || false,
@@ -312,6 +314,16 @@ export function Sidebar({ collapsed }: SidebarProps) {
           </div>
         ))}
       </nav>
+      <div className="border-t border-gray-200 mt-auto">
+        <button
+          onClick={onLogout}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors ${collapsed ? "justify-center" : ""}`}
+          title={collapsed ? "تسجيل الخروج" : undefined}
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>تسجيل الخروج</span>}
+        </button>
+      </div>
     </aside>
   );
 }

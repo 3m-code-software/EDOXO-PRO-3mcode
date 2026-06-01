@@ -98,8 +98,11 @@ export function SalesOrders() {
           </thead>
           <tbody>
             <tr>
-              <td colSpan={10} className="text-center py-8 text-gray-400">
-                لا توجد بيانات متاحة فى الجدول
+              <td colSpan={10} className="text-center py-8">
+                <div className="flex flex-col items-center gap-2">
+                  <FileText className="w-8 h-8 text-gray-300" />
+                  <span className="text-gray-400">لا توجد بيانات متاحة فى الجدول</span>
+                </div>
               </td>
             </tr>
           </tbody>

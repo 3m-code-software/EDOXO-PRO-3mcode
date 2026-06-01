@@ -12,15 +12,27 @@ import {
   DollarSign,
   MoreHorizontal,
   PanelRightClose,
+  LogOut,
 } from "lucide-react"
+
+interface User {
+  id: number
+  username: string
+  email: string
+  fullName: string
+  fullNameAr: string | null
+  roles: string[]
+}
 
 interface HeaderProps {
   onToggleSidebar: () => void
   onOpenCalculator: () => void
   onOpenProfit: () => void
+  onLogout: () => void
+  user: User | null
 }
 
-export function Header({ onToggleSidebar, onOpenCalculator, onOpenProfit }: HeaderProps) {
+export function Header({ onToggleSidebar, onOpenCalculator, onOpenProfit, onLogout, user }: HeaderProps) {
   return (
     <header className="bg-[#2563eb] text-white h-12 flex items-center justify-between px-4">
       <div className="flex items-center gap-2">
@@ -92,9 +104,19 @@ export function Header({ onToggleSidebar, onOpenCalculator, onOpenProfit }: Head
         </button>
 
         <div className="flex items-center gap-2 text-sm">
-          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-          <span>مرحبا بك في الشركة الموحدة</span>
+          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+            {user?.fullName?.charAt(0) || "U"}
+          </div>
+          <span>{user?.fullName || "مستخدم"}</span>
         </div>
+
+        <button
+          onClick={onLogout}
+          className="p-2 hover:bg-blue-600 rounded transition-colors"
+          title="تسجيل الخروج"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </header>
   )

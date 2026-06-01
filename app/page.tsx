@@ -19,7 +19,7 @@ import { CalculatorModal } from "@/components/calculator-modal"
 import { ProfitModal } from "@/components/profit-modal"
 
 export default function DashboardPage() {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user, logout } = useAuth()
   const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
@@ -37,11 +37,13 @@ export default function DashboardPage() {
         onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenCalculator={() => setCalculatorOpen(true)}
         onOpenProfit={() => setProfitOpen(true)}
+        onLogout={logout}
+        user={user}
       />
       <div className="flex">
-        <Sidebar collapsed={sidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} onLogout={logout} />
         <main className="flex-1 p-6 overflow-auto">
-          <WelcomeSection />
+          <WelcomeSection user={user} />
           <AlertBanner />
           <QuickAccess />
           <FinancialSummary />
@@ -52,7 +54,7 @@ export default function DashboardPage() {
           <SalesOrders />
           <PendingShipments />
           <footer className="text-center text-sm text-gray-500 py-4 mt-4">
-            Zoftar | Cloud ERP, Accounting, Sales, Inventory Software - V9.3 | Copyright © 2025 All rights reserved
+            EDOXO PRO | Cloud ERP, Accounting, Sales, Inventory Software - V9.3 | Copyright © 2025 All rights reserved
           </footer>
         </main>
       </div>

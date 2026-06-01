@@ -4,7 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Menu } from "lucide-react"
 
 export function SalesChart() {
-  const days = Array.from({ length: 31 }, (_, i) => `${i + 4} Nov 2025`)
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (29 - i))
+    return date
+  })
+
+  const formatDate = (date: Date) => {
+    const day = date.getDate()
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    return `${day} ${months[date.getMonth()]} ${date.getFullYear()}`
+  }
 
   return (
     <Card className="mb-6">
@@ -35,9 +45,9 @@ export function SalesChart() {
           <div className="absolute bottom-0 left-0 right-0 border-t border-dashed border-gray-200"></div>
         </div>
         <div className="flex justify-between text-xs text-gray-400 mt-2 overflow-x-auto">
-          {Array.from({ length: 30 }, (_, i) => (
+          {days.slice(0, 30).map((date, i) => (
             <span key={i} className="transform -rotate-45 whitespace-nowrap text-[10px]">
-              {i + 4} Nov 2025
+              {formatDate(date)}
             </span>
           ))}
         </div>
