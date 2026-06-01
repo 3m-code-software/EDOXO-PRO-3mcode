@@ -143,35 +143,47 @@ public class DatabaseSeeder
 
     private async Task SeedSampleDataAsync()
     {
-        if (_context.ProductCategories.Any()) return;
+        if (_context.Products.Any()) return;
 
-        var categories = new List<ProductCategory>
+        var hasCategories = _context.ProductCategories.Any();
+        List<ProductCategory>? categories = null;
+        List<ProductBrand>? brands = null;
+        List<ProductUnit>? units = null;
+
+        if (!hasCategories)
         {
-            new() { Name = "Electronics", IsActive = true },
-            new() { Name = "Clothing", IsActive = true },
-            new() { Name = "Food & Beverages", IsActive = true },
-            new() { Name = "Office Supplies", IsActive = true },
-            new() { Name = "Hardware", IsActive = true },
-        };
-        _context.ProductCategories.AddRange(categories);
+            categories = new List<ProductCategory>
+            {
+                new() { Name = "Electronics", IsActive = true },
+                new() { Name = "Clothing", IsActive = true },
+                new() { Name = "Food & Beverages", IsActive = true },
+                new() { Name = "Office Supplies", IsActive = true },
+                new() { Name = "Hardware", IsActive = true },
+            };
+            _context.ProductCategories.AddRange(categories);
 
-        var brands = new List<ProductBrand>
-        {
-            new() { Name = "Samsung", IsActive = true },
-            new() { Name = "Nike", IsActive = true },
-            new() { Name = "Local Brand", IsActive = true },
-        };
-        _context.ProductBrands.AddRange(brands);
+            brands = new List<ProductBrand>
+            {
+                new() { Name = "Samsung", IsActive = true },
+                new() { Name = "Nike", IsActive = true },
+                new() { Name = "Local Brand", IsActive = true },
+            };
+            _context.ProductBrands.AddRange(brands);
 
-        var units = new List<ProductUnit>
-        {
-            new() { Name = "Piece", ShortName = "pc", IsActive = true },
-            new() { Name = "Kilogram", ShortName = "kg", IsActive = true },
-            new() { Name = "Liter", ShortName = "L", IsActive = true },
-        };
-        _context.ProductUnits.AddRange(units);
+            units = new List<ProductUnit>
+            {
+                new() { Name = "Piece", ShortName = "pc", IsActive = true },
+                new() { Name = "Kilogram", ShortName = "kg", IsActive = true },
+                new() { Name = "Liter", ShortName = "L", IsActive = true },
+            };
+            _context.ProductUnits.AddRange(units);
 
-        await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
+        }
+
+        categories ??= await _context.ProductCategories.ToListAsync();
+        brands ??= await _context.ProductBrands.ToListAsync();
+        units ??= await _context.ProductUnits.ToListAsync();
 
         var products = new List<Product>
         {
