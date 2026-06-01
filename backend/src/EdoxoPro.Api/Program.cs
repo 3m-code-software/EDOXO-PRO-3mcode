@@ -17,6 +17,9 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
     builder.Host.UseSerilog((context, services, configuration) =>
         configuration.ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
@@ -35,7 +38,7 @@ try
     builder.Services.AddApplication();
 
     var jwtSection = builder.Configuration.GetSection("Jwt");
-    var jwtSecret = jwtSection["Secret"]!;
+    var jwtSecret = jwtSection["Key"]!;
     var jwtIssuer = jwtSection["Issuer"]!;
     var jwtAudience = jwtSection["Audience"]!;
 
@@ -100,7 +103,7 @@ try
     {
         options.AddPolicy("AllowFrontend", policy =>
         {
-            policy.WithOrigins("http://localhost:3000")
+            policy.WithOrigins("http://localhost:3000", "https://edoxo-pro-3mcode.vercel.app")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
